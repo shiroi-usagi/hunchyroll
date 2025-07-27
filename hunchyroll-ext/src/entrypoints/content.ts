@@ -27,11 +27,14 @@ export default defineContentScript({
     async main(ctx) {
         let state = new State()
 
-        function loadSubtitle(lang: string | null) {
-            if (!lang || !state.siteScriptReady) {
+        function loadSubtitle() {
+            if (!state.siteScriptReady
+                || !state.enabled
+                || !state.subtitles.length
+                || !state.lang) {
                 return
             }
-            const subtitle = state.subtitles.find(v => v.lang == lang)
+            const subtitle = state.subtitles.find(v => v.lang == state.lang)
             if (!subtitle) {
                 return
             }
@@ -80,7 +83,7 @@ export default defineContentScript({
             console.error('Hunchyroll:content', 'who-am-i error', e)
             state.error = String(e)
         }).then(() => {
-            if (state.lang) loadSubtitle(state.lang)
+            loadSubtitle()
         })
 
         window.addEventListener('message', (e) => {
@@ -91,7 +94,7 @@ export default defineContentScript({
             switch (msg.action) {
                 case 'site:init':
                     state.siteScriptReady = true
-                    if (state.lang) loadSubtitle(state.lang)
+                    loadSubtitle()
                     break
                 default:
                     console.error('Hunchyroll:content', 'unknown action', msg)
@@ -108,21 +111,18 @@ export default defineContentScript({
                 state.enabled = changes.enabled.newValue || false
             }
 
-            if (state.enabled && state.lang) {
-                loadSubtitle(state.lang)
-            } else if (changes.enabled && !state.enabled) {
+            if (changes.enabled && !state.enabled) {
                 disableSubtitle()
+            } else if (state.enabled && state.lang) {
+                loadSubtitle()
             }
         })
 
-        console.log('Hunchyroll:content', 'before local.get')
         browser.storage.local.get({enabled: false, lang: null}).then(v => {
             state.enabled = v.enabled
             state.lang = v.lang
 
-            if (state.enabled && state.lang) {
-                loadSubtitle(state.lang)
-            }
+            loadSubtitle()
         })
     },
 })

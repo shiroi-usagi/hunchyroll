@@ -3,7 +3,9 @@
     import {browser} from "@wxt-dev/webextension-polyfill/browser";
 
     let error = $state('')
+    let enabled: boolean = $state(false)
     const lang = 'hu-HU'
+    let subtitles = $state([] as { lang: string, url: string }[])
 
     let errTimeout: NodeJS.Timeout | undefined = $state(undefined)
     function reportError(err: any) {
@@ -15,15 +17,14 @@
     function disableSubtitle(tabs: browser.Tabs.Tab[]) {
         browser.storage.local.remove(['enabled'])
     }
-
     function loadSubtitle(tabs: browser.Tabs.Tab[], lang: string) {
         browser.storage.local.set({lang: lang, enabled: true})
     }
+    browser.storage.local.get(['enabled']).then((v: {[key: string]: any}) => {
+        enabled = v.enabled
+    })
 
-    let enabled: boolean = $state(false)
     let ports = $state([] as Browser.runtime.Port[])
-    let subtitles = $state([] as { lang: string, url: string }[])
-
     function connect(tabs: browser.Tabs.Tab[]) {
         tabs.forEach(tab => {
             if (tab.id === undefined
@@ -44,7 +45,6 @@
                 switch (msg.action) {
                     case 'content:state':
                         subtitles = msg.state.subtitles
-                        enabled = !!msg.state.lang
                 }
             })
         })
