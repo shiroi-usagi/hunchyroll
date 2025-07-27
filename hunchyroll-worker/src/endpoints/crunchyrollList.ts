@@ -33,19 +33,20 @@ export class CrunchyrollList extends OpenAPIRoute {
 
         const {id} = data.params;
 
-        if (id !== 'G9DUE19E9') {
-            return {
-                items: [],
-            }
+        switch (id) {
+            case 'GY0973WVY':
+                return {
+                    items: [
+                        {
+                            lang: 'hu-HU',
+                            url: `https://files.hunchyroll.com/GY0973WVY-HU_hu.txt`,
+                        },
+                    ],
+                };
+            default:
+                return {
+                    items: [],
+                }
         }
-
-        return {
-            items: [
-                {
-                    lang: 'hu-HU',
-                    url: `https://yum.example.com:8787/crunchy/${id}/hu-HU`,
-                },
-            ],
-        };
     }
 }

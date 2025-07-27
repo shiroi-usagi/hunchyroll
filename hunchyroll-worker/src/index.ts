@@ -2,7 +2,6 @@ import { fromHono } from "chanfana";
 import { Hono } from "hono";
 import { cors } from 'hono/cors'
 import { CrunchyrollBundle } from "./endpoints/crunchyrollBundle";
-import { CrunchyrollFetch } from "./endpoints/crunchyrollFetch";
 import { CrunchyrollList } from "./endpoints/crunchyrollList";
 
 // Start a Hono app
@@ -20,7 +19,6 @@ const openapi = fromHono(app, {
 // Register OpenAPI endpoints
 openapi.get('/crunchy/bundle.js', CrunchyrollBundle);
 openapi.get('/crunchy/:id', CrunchyrollList);
-openapi.get('/crunchy/:id/:lang', CrunchyrollFetch);
 
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))

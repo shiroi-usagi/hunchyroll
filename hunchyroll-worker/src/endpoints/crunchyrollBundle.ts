@@ -11,7 +11,7 @@ export class CrunchyrollBundle extends OpenAPIRoute {
 			'200': {
 				description: 'Returns if the task was deleted successfully',
 				content: {
-					'text/plain': {
+					'text/javascript': {
 						schema: z.string(),
 					},
 				},
@@ -29,6 +29,7 @@ export class CrunchyrollBundle extends OpenAPIRoute {
 		let text = await resp.text()
 			.then(v => (v.replaceAll(/new Worker\(([^)]*)\)/g, `(() => {const w = new Worker($1); window.hunchyrollWorker = w; return w})()`)))
 
-		return c.text(text)
+		c.header('Content-Type', 'text/javascript')
+		return c.body(text)
 	}
 }
