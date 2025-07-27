@@ -7,6 +7,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: {
     name: 'Hunchyroll',
+    default_locale: 'hu',
     web_accessible_resources: [
       {
         resources: ['site.js'],
@@ -15,6 +16,10 @@ export default defineConfig({
     ],
     permissions: [
       "declarativeNetRequest"
+    ],
+    host_permissions: [
+      "https://static.crunchyroll.com/*",
+      "https://www.crunchyroll.com/watch/*",
     ],
   },
 });

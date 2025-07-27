@@ -1,32 +1,32 @@
 export default defineUnlistedScript(() => {
-    console.log('site script is ready')
-
     let worker: Worker | undefined = undefined
 
     function initWorker(w: Worker = worker!) {
         worker = w
-        document.dispatchEvent(new CustomEvent('hunchyroll:content', {
-            detail: {target: 'ready'}
-        }));
+        window.postMessage({
+            target: 'hunchyroll:content',
+            action: 'site:init',
+        });
     }
 
-    document.addEventListener('hunchyroll:site', (e) => {
-        if (!(e instanceof CustomEvent)) {
+    window.addEventListener('message', (e) => {
+        if (typeof e.data !== 'object' || e.data.target !== 'hunchyroll:site') {
             return
         }
         if (!worker) {
-            console.error('hunchyroll:site', 'worker not ready')
+            console.error('Hunchyroll', 'hunchyroll:site', 'worker not ready')
             return
         }
-        switch (e.detail.target) {
+        const msg = e.data;
+        switch (msg.action) {
             case 'load-subtitle':
                 worker.postMessage({
                     target: 'set-track-by-url',
-                    url: e.detail.url,
+                    url: msg.url,
                 })
                 break
             default:
-                console.error('hunchyroll:site', 'unknown target', e.detail)
+                console.error('Hunchyroll', 'hunchyroll:site', 'unknown action')
         }
     })
 

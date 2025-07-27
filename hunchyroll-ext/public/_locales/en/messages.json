@@ -1,0 +1,8 @@
+{
+  "no_ports": {
+    "message": "Crunchyroll not detected"
+  },
+  "no_subtitles": {
+    "message": "No subtitle found for this video"
+  }
+}

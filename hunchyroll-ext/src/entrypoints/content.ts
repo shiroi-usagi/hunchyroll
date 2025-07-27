@@ -1,84 +1,137 @@
-interface State {
-    ready: boolean,
-    subtitles: { lang: string, url: string }[],
+interface Subtitle {
+    lang: string,
+    url: string,
+}
+
+interface ContentState {
+    id: string | null,
+    siteScriptReady: boolean,
+    subtitles: Subtitle[],
+    lang: string | null,
+    error?: string,
+}
+
+class State implements ContentState {
+    id: string | null = null
+    siteScriptReady: boolean = false
+    subtitles: Subtitle[] = []
     error?: string
-    loaded?: string,
+
+    public set lang(lang: string | null) {
+        if (!lang) {
+            localStorage.removeItem('hunchyroll:lang')
+            // browser.storage.local.remove('hunchyroll:lang')
+        } else {
+            localStorage.setItem('hunchyroll:lang', lang)
+            // browser.storage.local.set({['hunchyroll:lang']: lang})
+        }
+    }
+    public get lang() {
+        // return browser.storage.local.get('hunchyroll:lang')
+        return localStorage.getItem('hunchyroll:lang')
+    }
 }
 
 export default defineContentScript({
     matches: ['https://static.crunchyroll.com/*'],
     allFrames: true,
-    main(ctx) {
-        console.log('content script is ready')
-        let state: State = {
-            ready: false,
-            subtitles: [],
-        };
+    async main(ctx) {
+        let state = new State()
 
         function loadSubtitle(lang: string) {
-            console.log('loadSubtitle', state, lang)
-            if (!state.ready || state.loaded == lang) {
+            if (!state.siteScriptReady) {
                 return
             }
             const subtitle = state.subtitles.find(v => v.lang == lang)
             if (!subtitle) {
                 return
             }
-            state.loaded = lang
-            localStorage.setItem('hunchyroll:lang', lang)
-            document.dispatchEvent(new CustomEvent('hunchyroll:site', {
-                detail: {target: 'load-subtitle', url: subtitle.url}
-            }));
+            state.lang = lang
+            window.postMessage({
+                target: 'hunchyroll:site',
+                action: 'load-subtitle',
+                url: subtitle.url,
+            })
+        }
+
+        function disableSubtitle() {
+            state.lang = null
+            browser.runtime.sendMessage({
+                action: 'reload'
+            })
         }
 
         function loadDefaultSubtitle() {
-            const lang = localStorage.getItem('hunchyroll:lang');
+            const lang = localStorage.getItem('hunchyroll:lang')
             if (lang) {
                 loadSubtitle(lang)
             }
         }
 
-        browser.runtime.sendMessage({
-            target: 'who-am-i',
-        }).then(id => (fetch(`https://yum.example.com:8787/crunchy/${id}`, {signal: ctx.signal})))
-            .catch(ctx => state.error = ctx.message)
-            .then(resp => {
-                resp.json().then((body: any) => {
-                    if (!resp.ok) {
-                        state.error = body.error
-                        return
-                    }
-                    state.subtitles = body.items
-                    loadDefaultSubtitle();
-                })
+        const ports: Browser.runtime.Port[] = []
+        browser.runtime.onConnect.addListener(port => {
+            ports.push(port)
+            port.onDisconnect.addListener(() => {
+                let i = ports.findIndex(p => p === port)
+                ports.splice(i, 1)
             })
+            port.postMessage({
+                action: 'content:state',
+                state: {
+                    id: state.id,
+                    subtitles: state.subtitles,
+                    lang: state.lang,
+                },
+            })
+        })
 
-        browser.runtime.onMessage.addListener((msg) => {
-            switch (msg.target) {
-                case 'hunchyroll:load-subtitle':
-                    console.log('hunchyroll:load-subtitle', msg)
-                    loadSubtitle(msg.lang)
-                    break
-                default:
-                    console.error('content', 'unknown target', msg)
-            }
-        });
-
-        document.addEventListener('hunchyroll:content', (e) => {
-            if (!(e instanceof CustomEvent)) {
+        browser.runtime.sendMessage({
+            action: 'who-am-i',
+        }).then(async id => {
+            const resp = await fetch(`${import.meta.env.WXT_APP_ADDR}/crunchy/${id}`, {signal: ctx.signal})
+            const body = await resp.json()
+            if (!resp.ok) {
+                state.error = body.error
                 return
             }
-            const msg = e.detail;
-            switch (msg.target) {
-                case 'ready':
-                    state.ready = true
-                    loadDefaultSubtitle()
+            state.id = id
+            state.subtitles = body.items
+        }).catch((e) => {
+            console.error('Hunchyroll:content', 'who-am-i error', e)
+            state.error = String(e)
+        }).then(() => {
+            loadDefaultSubtitle()
+        })
+
+        browser.runtime.onMessage.addListener((msg) => {
+            console.debug('Hunchyroll:content', 'onMessage', msg)
+            switch (msg.action) {
+                case 'hunchyroll:load-subtitle':
+                    loadSubtitle(msg.lang)
+                    break
+                case 'hunchyroll:disable-subtitle':
+                    disableSubtitle()
                     break
                 default:
-                    console.error('hunchyroll:content', 'unknown target', msg)
+                    console.error('Hunchyroll:content', 'unknown action', msg)
             }
         })
 
-        injectScript('/site.js', {keepInDom: false})
+        window.addEventListener('message', (e) => {
+            if (typeof e.data !== 'object' || e.data.target !== 'hunchyroll:content') {
+                return
+            }
+            const msg = e.data
+            switch (msg.action) {
+                case 'site:init':
+                    state.siteScriptReady = true
+                    loadDefaultSubtitle()
+                    break
+                default:
+                    console.error('Hunchyroll:content', 'unknown action', msg)
+            }
+        })
+
+        injectScript('/site.js', {keepInDom: false}).then().catch(console.error)
     },
-});
+})

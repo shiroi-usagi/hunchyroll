@@ -1,4 +1,7 @@
 function findIdInUrl(url: string): string | undefined {
+    if (!url) {
+        return undefined;
+    }
     const segments = new URL(url).pathname.split('/');
     if (segments.length < 4 || segments[1] !== 'watch') {
         return undefined;
@@ -8,36 +11,36 @@ function findIdInUrl(url: string): string | undefined {
 
 export default defineBackground(() => {
     browser.runtime.onInstalled.addListener((details) => {
-        console.log('Extension installed:', details);
+        browser.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1408],
+            addRules: [
+                {
+                    id: 1408,
+                    priority: 1,
+                    action: {
+                        type: 'redirect',
+                        redirect: {
+                            url: `${import.meta.env.WXT_APP_ADDR}/crunchy/bundle.js`
+                        }
+                    },
+                    condition: {
+                        urlFilter: '||static.crunchyroll.com/vilos-v2/web/vilos/js/bundle.js',
+                    },
+                }
+            ],
+        })
     });
+
     browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-        switch (msg.target) {
+        switch (msg.action) {
             case 'who-am-i':
-                sendResponse(findIdInUrl(sender.tab?.url || ''))
+                if (sender.tab?.url) sendResponse(findIdInUrl(sender.tab.url))
+                break
+            case 'reload':
+                if (sender.tab?.id) browser.tabs.reload(sender.tab.id)
                 break
             default:
-                console.error('background', 'unknown target', msg)
+                console.error('background', 'unknown action', msg)
         }
-    })
-
-    browser.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [1408]
-    })
-    browser.declarativeNetRequest.updateDynamicRules({
-        addRules: [
-            {
-                id: 1408,
-                priority: 1,
-                action: {
-                    type: 'redirect',
-                    redirect: {
-                        url: 'https://yum.example.com:8787/crunchy/bundle.js'
-                    }
-                },
-                condition: {
-                    urlFilter: 'https://static.crunchyroll.com/vilos-v2/web/vilos/js/bundle.js',
-                },
-            }
-        ]
     })
 });
