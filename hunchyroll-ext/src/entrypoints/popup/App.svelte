@@ -13,24 +13,11 @@
     }
 
     function disableSubtitle(tabs: browser.Tabs.Tab[]) {
-        tabs.forEach(tab => {
-            if (tab.id) {
-                browser.tabs.sendMessage(<number>tab.id, {
-                    action: 'hunchyroll:disable-subtitle',
-                });
-            }
-        })
+        browser.storage.local.remove(['enabled'])
     }
 
     function loadSubtitle(tabs: browser.Tabs.Tab[], lang: string) {
-        tabs.forEach(tab => {
-            if (tab.id) {
-                browser.tabs.sendMessage(<number>tab.id, {
-                    action: 'hunchyroll:load-subtitle',
-                    lang: lang,
-                });
-            }
-        })
+        browser.storage.local.set({lang: lang, enabled: true})
     }
 
     let enabled: boolean = $state(false)
@@ -39,8 +26,7 @@
 
     function connect(tabs: browser.Tabs.Tab[]) {
         tabs.forEach(tab => {
-            if (tab.status !== 'complete'
-                || tab.id === undefined
+            if (tab.id === undefined
                 || !(tab?.url || '').startsWith('https://www.crunchyroll.com/watch/')
                 || ports.find(p => p.sender?.tab?.id === tab.id) // remove if we already have
             ) {

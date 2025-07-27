@@ -4,6 +4,7 @@ interface Subtitle {
 }
 
 interface ContentState {
+    enabled: boolean,
     id: string | null,
     siteScriptReady: boolean,
     subtitles: Subtitle[],
@@ -12,24 +13,12 @@ interface ContentState {
 }
 
 class State implements ContentState {
+    enabled: boolean = false
     id: string | null = null
     siteScriptReady: boolean = false
     subtitles: Subtitle[] = []
+    lang: string | null = null
     error?: string
-
-    public set lang(lang: string | null) {
-        if (!lang) {
-            localStorage.removeItem('hunchyroll:lang')
-            // browser.storage.local.remove('hunchyroll:lang')
-        } else {
-            localStorage.setItem('hunchyroll:lang', lang)
-            // browser.storage.local.set({['hunchyroll:lang']: lang})
-        }
-    }
-    public get lang() {
-        // return browser.storage.local.get('hunchyroll:lang')
-        return localStorage.getItem('hunchyroll:lang')
-    }
 }
 
 export default defineContentScript({
@@ -38,15 +27,14 @@ export default defineContentScript({
     async main(ctx) {
         let state = new State()
 
-        function loadSubtitle(lang: string) {
-            if (!state.siteScriptReady) {
+        function loadSubtitle(lang: string | null) {
+            if (!lang || !state.siteScriptReady) {
                 return
             }
             const subtitle = state.subtitles.find(v => v.lang == lang)
             if (!subtitle) {
                 return
             }
-            state.lang = lang
             window.postMessage({
                 target: 'hunchyroll:site',
                 action: 'load-subtitle',
@@ -55,17 +43,9 @@ export default defineContentScript({
         }
 
         function disableSubtitle() {
-            state.lang = null
             browser.runtime.sendMessage({
                 action: 'reload'
             })
-        }
-
-        function loadDefaultSubtitle() {
-            const lang = localStorage.getItem('hunchyroll:lang')
-            if (lang) {
-                loadSubtitle(lang)
-            }
         }
 
         const ports: Browser.runtime.Port[] = []
@@ -100,21 +80,7 @@ export default defineContentScript({
             console.error('Hunchyroll:content', 'who-am-i error', e)
             state.error = String(e)
         }).then(() => {
-            loadDefaultSubtitle()
-        })
-
-        browser.runtime.onMessage.addListener((msg) => {
-            console.debug('Hunchyroll:content', 'onMessage', msg)
-            switch (msg.action) {
-                case 'hunchyroll:load-subtitle':
-                    loadSubtitle(msg.lang)
-                    break
-                case 'hunchyroll:disable-subtitle':
-                    disableSubtitle()
-                    break
-                default:
-                    console.error('Hunchyroll:content', 'unknown action', msg)
-            }
+            if (state.lang) loadSubtitle(state.lang)
         })
 
         window.addEventListener('message', (e) => {
@@ -125,7 +91,7 @@ export default defineContentScript({
             switch (msg.action) {
                 case 'site:init':
                     state.siteScriptReady = true
-                    loadDefaultSubtitle()
+                    if (state.lang) loadSubtitle(state.lang)
                     break
                 default:
                     console.error('Hunchyroll:content', 'unknown action', msg)
@@ -133,5 +99,30 @@ export default defineContentScript({
         })
 
         injectScript('/site.js', {keepInDom: false}).then().catch(console.error)
+
+        browser.storage.local.onChanged.addListener((changes) => {
+            if (changes.lang) {
+                state.lang = changes.lang.newValue || null
+            }
+            if (changes.enabled) {
+                state.enabled = changes.enabled.newValue || false
+            }
+
+            if (state.enabled && state.lang) {
+                loadSubtitle(state.lang)
+            } else if (changes.enabled && !state.enabled) {
+                disableSubtitle()
+            }
+        })
+
+        console.log('Hunchyroll:content', 'before local.get')
+        browser.storage.local.get({enabled: false, lang: null}).then(v => {
+            state.enabled = v.enabled
+            state.lang = v.lang
+
+            if (state.enabled && state.lang) {
+                loadSubtitle(state.lang)
+            }
+        })
     },
 })

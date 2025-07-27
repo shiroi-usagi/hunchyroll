@@ -15,7 +15,8 @@ export default defineConfig({
       },
     ],
     permissions: [
-      "declarativeNetRequest"
+      "declarativeNetRequest",
+      "storage"
     ],
     host_permissions: [
       "https://static.crunchyroll.com/*",
