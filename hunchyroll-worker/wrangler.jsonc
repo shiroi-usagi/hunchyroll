@@ -14,7 +14,7 @@
 	"dev": {
 		"local_protocol": "https",
 		"host": "yum.example.com"
-	}
+	},
 
 	/**
 	 * Smart Placement
