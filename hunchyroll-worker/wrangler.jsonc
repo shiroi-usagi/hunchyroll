@@ -50,4 +50,15 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+
+	/**
+	 * Routes and domains
+	 * https://developers.cloudflare.com/workers/configuration/routing/
+	 */
+	"routes": [
+		{
+			"pattern": "hunchyroll.com",
+			"custom_domain": true
+		}
+	]
 }
