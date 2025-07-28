@@ -20,7 +20,7 @@ export default defineBackground(() => {
                     action: {
                         type: 'redirect',
                         redirect: {
-                            url: `${import.meta.env.WXT_APP_ADDR}/crunchy/bundle.js`
+                            url: `${import.meta.env.WXT_API_ADDR}/crunchy/bundle.js`
                         }
                     },
                     condition: {

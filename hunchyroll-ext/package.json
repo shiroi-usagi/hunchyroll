@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
-    "build": "wxt build --mode development && wxt build -b firefox --mode development",
+    "build": "wxt build && wxt build -b firefox",
     "build:watch": "nodemon --watch src --watch wxt.config.ts -e js,ts,svelte,html,css --exec npm run build",
+    "build:dev": "wxt build --mode development && wxt build -b firefox --mode development",
+    "build:dev:watch": "nodemon --watch src --watch wxt.config.ts -e js,ts,svelte,html,css --exec npm run build:dev",
     "build:chrome": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip --mode production && wxt zip -b firefox --mode production",

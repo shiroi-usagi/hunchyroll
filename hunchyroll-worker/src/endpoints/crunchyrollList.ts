@@ -5,7 +5,7 @@ import {type AppContext} from "../types";
 export class CrunchyrollList extends OpenAPIRoute {
     schema = {
         tags: ['Crunchyroll'],
-        summary: 'List Tasks',
+        summary: 'Lists subtitles for a given Crunchyroll video id.',
         request: {
             params: z.object({
                 id: Str({description: 'Crunchyroll ID'}),
@@ -13,7 +13,7 @@ export class CrunchyrollList extends OpenAPIRoute {
         },
         responses: {
             '200': {
-                description: 'Returns a list of tasks',
+                description: 'Returns a list of subtitles for the given Cruchyroll video id.',
                 content: {
                     'application/json': {
                         schema: z.object({

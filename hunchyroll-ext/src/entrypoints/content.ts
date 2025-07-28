@@ -71,7 +71,7 @@ export default defineContentScript({
         browser.runtime.sendMessage({
             action: 'who-am-i',
         }).then(async id => {
-            const resp = await fetch(`${import.meta.env.WXT_APP_ADDR}/crunchy/${id}`, {signal: ctx.signal})
+            const resp = await fetch(`${import.meta.env.WXT_API_ADDR}/crunchy/${id}`, {signal: ctx.signal})
             const body = await resp.json()
             if (!resp.ok) {
                 state.error = body.error

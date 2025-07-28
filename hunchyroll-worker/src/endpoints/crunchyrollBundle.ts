@@ -5,7 +5,7 @@ import {type AppContext} from "../types";
 export class CrunchyrollBundle extends OpenAPIRoute {
     schema = {
         tags: ['Crunchyroll'],
-        summary: 'Show JS bundle',
+        summary: 'Alters the original Crunchyroll bundle.js to expose the worker.',
         responses: {
             '200': {
                 description: 'Returns if the task was deleted successfully',
