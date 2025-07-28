@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "hunchyroll-worker",
+	"name": "hunchyroll",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-07-02",
 	"observability": {
